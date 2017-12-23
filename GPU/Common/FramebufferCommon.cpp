@@ -518,6 +518,11 @@ VirtualFramebuffer *FramebufferManagerCommon::DoSetRenderFrameBuffer(const Frame
 	gstate_c.curRTHeight = vfb->height;
 	gstate_c.curRTRenderWidth = vfb->renderWidth;
 	gstate_c.curRTRenderHeight = vfb->renderHeight;
+	float newRTScale = (float)vfb->renderWidth / (float)vfb->width;
+	if (gstate_c.curRTScale != newRTScale) {
+		gstate_c.curRTScale = newRTScale;
+		gstate_c.Dirty(DIRTY_TEXLOD);
+	}
 	return vfb;
 }
 
