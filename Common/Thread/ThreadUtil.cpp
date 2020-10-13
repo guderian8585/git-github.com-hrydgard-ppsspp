@@ -4,7 +4,7 @@
 #include <excpt.h>
 #endif
 #define TLS_SUPPORTED
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || defined(__wiiu__)
 #define TLS_SUPPORTED
 #endif
 
@@ -14,7 +14,7 @@
 #include "Common/Log.h"
 #include "Common/Thread/ThreadUtil.h"
 
-#if defined(__ANDROID__) || defined(__APPLE__) || (defined(__GLIBC__) && defined(_GNU_SOURCE))
+#if defined(__ANDROID__) || defined(__APPLE__) || (defined(__GLIBC__) && defined(_GNU_SOURCE)) || defined(__wiiu__)
 #include <pthread.h>
 #endif
 
@@ -98,7 +98,7 @@ void setCurrentThreadName(const char* threadName) {
 	{}
 #else
 
-#if defined(__ANDROID__) || (defined(__GLIBC__) && defined(_GNU_SOURCE))
+#if defined(__ANDROID__) || (defined(__GLIBC__) && defined(_GNU_SOURCE)) || defined(__wiiu__)
 	pthread_setname_np(pthread_self(), threadName);
 #elif defined(__APPLE__)
 	pthread_setname_np(threadName);
