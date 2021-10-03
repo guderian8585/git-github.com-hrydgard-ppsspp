@@ -148,6 +148,7 @@
 #define IDC_BREAKPOINT_ONCHANGE         1177
 #define IDC_THREADLIST                  1178
 #define IDC_THREADNAME                  1179
+#define IDC_TRACETOGGLER				40503
 #define IDC_DISASMSTATUSBAR             1180
 #define IDC_STACKFRAMES                 1181
 #define IDC_GEDBG_VALUES                1182

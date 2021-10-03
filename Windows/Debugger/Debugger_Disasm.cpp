@@ -32,10 +32,32 @@
 #include <windowsx.h>
 #include <commctrl.h>
 
+// Includes for Trace Logger Mod
+#include <fstream>
+#include <string>
+#include <sstream>
 // How long (max) to wait for Core to pause before clearing temp breakpoints.
 static const int TEMP_BREAKPOINT_WAIT_MS = 100;
 
 static FAR WNDPROC DefGotoEditProc;
+
+// Begin Trace Logger Changes
+static int check = CreateDirectoryA("Trace Logs\\", NULL);
+static std::string traceLogDir = "Trace Logs\\";
+static char traceLogFilename[30];
+static std::string traceLogPath;
+static time_t rawtime;
+static struct tm* timeinfo;
+static std::ofstream traceLogger;
+static const int STEP_INTO = 0;
+static const int STEP_OVER = 1;
+static const int STEP_OUT = 2;
+static const int STEP_GO = 3;
+static const int STEP_BREAK = 4;
+static const int STEP_BREAKPOINT = 5;
+// End Trace Logger Changes
+
+
 
 LRESULT CALLBACK GotoEditProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -128,6 +150,9 @@ CDisasm::CDisasm(HINSTANCE _hInstance, HWND _hParent, DebugInterface *_cpu) : Di
 	CtrlDisAsmView *ptr = CtrlDisAsmView::getFrom(GetDlgItem(m_hDlg,IDC_DISASMVIEW));
 	ptr->setDebugger(cpu);
 	ptr->gotoAddr(0x00000000);
+//	SendMessage(m_hDlg, IDC_TRACETOGGLER, BM_SETCHECK, BST_UNCHECKED);
+	ptr->disableTraceLogger();
+
 
 	CtrlRegisterList *rl = CtrlRegisterList::getFrom(GetDlgItem(m_hDlg,IDC_REGLIST));
 	rl->setCPU(cpu);
@@ -181,10 +206,12 @@ CDisasm::CDisasm(HINSTANCE _hInstance, HWND _hParent, DebugInterface *_cpu) : Di
 	MoveWindow(m_hDlg,x,y,1,1,FALSE);
 	MoveWindow(m_hDlg,x,y,w,h,TRUE);
 	SetDebugMode(true, true);
+
 }
 
 CDisasm::~CDisasm()
 {
+	traceLogger.close();
 	DestroyWindow(statusBarWnd);
 
 	delete leftTabs;
@@ -210,6 +237,9 @@ void CDisasm::stepInto()
 	u32 newAddress = currentPc+ptr->getInstructionSizeAt(currentPc);
 
 	MIPSAnalyst::MipsOpcodeInfo info = MIPSAnalyst::GetOpcodeInfo(cpu,currentPc);
+
+	if (ptr->getTraceLoggerStatus()) writeToTraceLogger(STEP_INTO);
+	
 	if (info.isBranch)
 	{
 		ptr->scrollStepping(newAddress);
@@ -253,9 +283,13 @@ void CDisasm::stepOver()
 	CtrlDisAsmView *ptr = CtrlDisAsmView::getFrom(GetDlgItem(m_hDlg,IDC_DISASMVIEW));
 	lastTicks = CoreTiming::GetTicks();
 
+
+
 	// If the current PC is on a breakpoint, the user doesn't want to do nothing.
 	CBreakPoints::SetSkipFirst(currentMIPS->pc);
 	u32 currentPc = cpu->GetPC();
+
+	if (ptr->getTraceLoggerStatus()) writeToTraceLogger(STEP_OVER);
 
 	MIPSAnalyst::MipsOpcodeInfo info = MIPSAnalyst::GetOpcodeInfo(cpu,cpu->GetPC());
 	ptr->setDontRedraw(true);
@@ -322,6 +356,12 @@ void CDisasm::stepOut()
 	
 	CtrlDisAsmView *ptr = CtrlDisAsmView::getFrom(GetDlgItem(m_hDlg,IDC_DISASMVIEW));
 	ptr->setDontRedraw(true);
+//	u32 currentPc = cpu->GetPC();
+
+
+	if (ptr->getTraceLoggerStatus()) writeToTraceLogger(STEP_OUT);
+
+
 
 	SetDebugMode(false, true);
 	CBreakPoints::AddBreakPoint(breakpointAddress,true);
@@ -339,6 +379,8 @@ void CDisasm::runToLine()
 
 	CtrlDisAsmView *ptr = CtrlDisAsmView::getFrom(GetDlgItem(m_hDlg,IDC_DISASMVIEW));
 	u32 pos = ptr->getSelection();
+	
+
 
 	lastTicks = CoreTiming::GetTicks();
 	ptr->setDontRedraw(true);
@@ -349,6 +391,7 @@ void CDisasm::runToLine()
 
 BOOL CDisasm::DlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
+
 	//if (!m_hDlg) return FALSE;
 	switch(message)
 	{
@@ -528,6 +571,9 @@ BOOL CDisasm::DlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 						ptr->gotoPC();
 						UpdateDialog();
 						vfpudlg->Update();
+						// Begin trace logger changes
+						if (ptr->getTraceLoggerStatus())  writeToTraceLogger(STEP_BREAK);
+						// End trace logger changes
 					} else {					// go
 						lastTicks = CoreTiming::GetTicks();
 
@@ -536,6 +582,9 @@ BOOL CDisasm::DlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 
 						SetDebugMode(false, true);
 						Core_EnableStepping(false);
+						// Begin trace logger changes
+						if (ptr->getTraceLoggerStatus()) writeToTraceLogger(STEP_GO);
+						// End trace logger changes
 					}
 				}
 				break;
@@ -585,6 +634,12 @@ BOOL CDisasm::DlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				break;
 
+			case IDC_TRACETOGGLER:
+				{
+					if (ptr->getTraceLoggerStatus()) ptr->disableTraceLogger();
+					else ptr->enableTraceLogger();
+				}
+				break;
 			case IDC_ALLFUNCTIONS:
 				if (g_symbolMap)
 					g_symbolMap->FillSymbolListBox(GetDlgItem(m_hDlg, IDC_FUNCTIONLIST),ST_FUNCTION);
@@ -684,14 +739,40 @@ BOOL CDisasm::DlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		return TRUE;
 	case WM_CLOSE:
+		// BEGIN TRACE LOGGER CHANGES
+		traceLogger.close();
+		
+		// END TRACE LOGGER CHANGES
+
+
 		Show(false);
 		return TRUE;
 	case WM_ACTIVATE:
+
 		if (wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE)
 		{
 			g_activeWindow = WINDOW_CPUDEBUGGER;
 		}
 		break;
+		// BEGIN TRACE LOGGER CHANGES
+	case WM_SHOWWINDOW:
+		{
+			if (!IsWindowVisible(m_hDlg)) {
+
+				time(&rawtime);
+				timeinfo = localtime(&rawtime);
+				// ^^^ Code shamelessly stolen from cplusplus.com strftime tutorial
+
+				strftime(traceLogFilename, 30, "%Y_%m_%d_%H_%M_%S.txt", timeinfo);
+				traceLogPath = traceLogDir + traceLogFilename;
+
+				/* Whenever the Disassembly viewer is opened, we set a new file name. If the window is not-yet-opened 
+					but will be, then !IsWindowVisible is true. WM_SHOWWINDOW happens when window visibility *changes at all*.
+					We only open the file when it's time to write. 
+					*/
+			}
+			// END TRACE LOGGER CHANGES
+		}
 	}
 	return FALSE;
 }
@@ -911,4 +992,47 @@ void CDisasm::UpdateDialog(bool _bComplete)
 	// redraw. all others are updated manually
 	InvalidateRect (GetDlgItem(m_hDlg, IDC_DEBUGMEMVIEW), NULL, TRUE);
 	UpdateWindow (GetDlgItem(m_hDlg, IDC_DEBUGMEMVIEW));
+}
+
+// More trace logger changes
+void CDisasm::writeToTraceLogger(int writeCode) {
+	CtrlDisAsmView* ptr = CtrlDisAsmView::getFrom(GetDlgItem(m_hDlg, IDC_DISASMVIEW));
+	u32 currentPc = cpu->GetPC();
+	u32 newAddress = currentPc + ptr->getInstructionSizeAt(currentPc);
+	traceLogger.open(traceLogPath.c_str(), std::ios::app);
+
+	if (writeCode == STEP_GO) traceLogger << "// Gooooooo!\n";
+
+	char OpcodeText[80];
+	char ParamsText[100];
+	ptr->getOpcodeText(currentPc, OpcodeText, 80);
+	ptr->getGPRsText(currentPc, ParamsText, 100);
+
+	std::stringstream addressStream;
+	traceLogger << "0x";
+	addressStream << std::hex << currentPc;
+
+	// 0 padding
+	for (int i = 1; i <= 8 - addressStream.str().length(); i++) traceLogger << "0";
+
+	traceLogger << std::uppercase << std::hex << currentPc << "\t";
+	traceLogger << OpcodeText << ParamsText;
+	traceLogger << "\n";
+	switch (writeCode) {
+	case STEP_OVER:
+		traceLogger << "// Step Over\n";
+		break;
+	case STEP_OUT:
+		traceLogger << "// Step Out!\n\n";
+		break;
+	case STEP_BREAK:
+		traceLogger << "// STOP!\n";
+		break;
+	case STEP_BREAKPOINT:
+		traceLogger << "// BreakPoint!\n";
+		break;
+	}
+
+
+	traceLogger.close();
 }

@@ -27,9 +27,57 @@
 #include <CommDlg.h>
 #include <tchar.h>
 #include <set>
+// Extras for Trace Logger Mods
+#include <string>
+#include <sstream>
 
 TCHAR CtrlDisAsmView::szClassName[] = _T("CtrlDisAsmView");
 extern HMENU g_hPopupMenus;
+
+struct regStringPair {
+	int reg;
+	const char* name;
+};
+
+static const regStringPair regNames[]{
+	{MIPS_REG_ZERO, "zero"},
+	{MIPS_REG_COMPILER_SCRATCH, "at"},
+	{MIPS_REG_V0, "v0"},
+	{MIPS_REG_V1, "v1"},
+	{MIPS_REG_A0, "a0"},
+	{MIPS_REG_A1, "a1"},
+	{MIPS_REG_A2, "a2"},
+	{MIPS_REG_A3, "a3"},
+	{MIPS_REG_A4, "a4"},
+	{MIPS_REG_A5, "a5"},
+	{MIPS_REG_T0, "t0"},
+	{MIPS_REG_T1, "t1"},
+	{MIPS_REG_T2, "t2"},
+	{MIPS_REG_T3, "t3"},
+	{MIPS_REG_T4, "t4"},
+	{MIPS_REG_T5, "t5"},
+	{MIPS_REG_T6, "t6"},
+	{MIPS_REG_T7, "t7"},
+	{MIPS_REG_S0, "s0"},
+	{MIPS_REG_S1, "s1"},
+	{MIPS_REG_S2, "s2"},
+	{MIPS_REG_S3, "s3"},
+	{MIPS_REG_S4, "s4"},
+	{MIPS_REG_S5, "s5"},
+	{MIPS_REG_S6, "s6"},
+	{MIPS_REG_S7, "s7"},
+	{MIPS_REG_T8, "t8"},
+	{MIPS_REG_T9, "t9"},
+	{MIPS_REG_K0, "k0"},
+	{MIPS_REG_K1, "k1"},
+	{MIPS_REG_GP, "gp"},
+	{MIPS_REG_SP, "sp"},
+	{MIPS_REG_FP, "fp"},
+	{MIPS_REG_RA, "ra"},
+	{MIPS_REG_HI, "hi"},
+	{MIPS_REG_LO, "lo"}
+
+};
 
 void CtrlDisAsmView::init()
 {
@@ -1352,12 +1400,175 @@ void CtrlDisAsmView::disassembleToFile() {
 	}
 }
 
+
+// The following member has been modified to accomodate "nicer-looking" output (according to my needs). Assumes maximum length of an instruction name is 9 or 10 chars.
+// What's the maximum length the params string could reasonably be?
 void CtrlDisAsmView::getOpcodeText(u32 address, char* dest, int bufsize)
 {
 	DisassemblyLineInfo line;
 	address = manager.getStartAddress(address);
 	manager.getLine(address,displaySymbols,line);
-	snprintf(dest, bufsize, "%s  %s",line.name.c_str(),line.params.c_str());
+	
+	// Begin trace logger mods
+	std::string instructionName = line.name;
+	std::string parameters = line.params;
+
+	// Remove any extra \t characters at the beginning of parameters, because they exist for some reason when instructionName is long enough. 
+	if (parameters.find('\t') != parameters.npos)
+		parameters.erase(parameters.find('\t'));
+
+	// Formatting: Maximum length of an instruction seems to be 9 characters. We want the instruction "column" to be uniformly 10 characters long.
+	while (instructionName.length() < 10) {
+		instructionName += " ";
+	}
+	instructionName += "\t"; // Plus an extra tab character for increased readability
+
+	//DEBUG_LOG(CPU, parameters.c_str());
+
+	// Setting the paremeters "column" to have 32 characters uniformly.
+	while (parameters.length() < 32) {
+		parameters += " ";
+	}
+	// removed the space between %s and %s since i pre-formatted them. 
+	snprintf(dest, bufsize, "%s%s", instructionName.c_str(), parameters.c_str());
+
+	return;
+	// end modifications
+}
+
+void CtrlDisAsmView::enableTraceLogger()
+{
+	traceLogging = true;
+	return;
+}
+void CtrlDisAsmView::disableTraceLogger()
+{
+	traceLogging = false;
+	return;
+}
+
+bool CtrlDisAsmView::getTraceLoggerStatus()
+{
+	return traceLogging;
+}
+
+void CtrlDisAsmView::getGPRsText(u32 address, char* dest, int bufsize)
+{
+	DisassemblyLineInfo line;
+	address = manager.getStartAddress(address);
+	manager.getLine(address, displaySymbols, line);
+	std::string parameters = line.params;
+	std::string output = "";
+
+	// no registers used, no problem.
+	if (parameters.empty()) {
+		snprintf(dest, bufsize, "");
+		return;
+	}
+
+	size_t p = 0, nextp = parameters.find(',');
+
+	while (p != parameters.npos) {
+		std::string arg = "";
+		if (nextp != parameters.npos) {
+			arg = parameters.substr(p, nextp - p);
+		}
+		else {
+			arg = parameters.substr(p, parameters.length() - p);
+		}
+
+		// checks if arg is a register and if arg isn't already listed in the output
+
+		if (regStringToMIPSGPReg(arg.c_str()) != -1 && output.find(arg) == arg.npos) {
+			std::string immediateOutput = "";
+			immediateOutput += arg + "=";
+			std::stringstream argValue;
+			int regIdentifier = regStringToMIPSGPReg(arg.c_str());
+			argValue << std::uppercase << std::hex << currentMIPS->r[regIdentifier];
+			for (int i = 1; i <= 8 - argValue.str().length(); i++) immediateOutput += "0";
+
+			immediateOutput += argValue.str();
+			// Padding out the register value for even spacing
+			while (immediateOutput.length() < 11) {
+				immediateOutput += " ";
+			}
+			immediateOutput += ", ";
+			output += immediateOutput;
+		}
+		// Handles offset registers
+		else if (arg.find('(') != arg.npos) {
+			// Looks for the offset value as a string
+			std::string offset = arg.substr(0, arg.find('('));
+			// Assumes we are definitely reading something like 0xHEXNUMBER. Hopefully no problems if it encounters a negative offset?
+				// Cuz i haven't seen one yet.
+				// Also due to my ignorance about how this works, I'm unsure if offsets can even be large enough
+				//	that unsigning the int would even be worthwhile, but I'm gonna hazard a guess... no??? Hope i'm right!
+			long int offsetValue = strtol(offset.c_str(), NULL, 16);
+			
+			// isolates the register mentioned in the offset
+			arg = arg.substr(arg.find('(') + 1, arg.find(')') - arg.find('(') - 1);
+
+			// checks if arg is a register and if arg isn't already listed in the output.
+			// If it is listed, it will skip adding the register but will display memory from the offset register (TODO)
+			// Needs a bit more subtlety in case the params have different offsets of the same registry...
+			int regIdentifier = regStringToMIPSGPReg(arg.c_str());
+			if (regIdentifier != -1 ) {
+				// Do not reprint an already printed register.
+				if (output.find(arg) == arg.npos) {
+					std::string immediateOutput = "";
+					immediateOutput += arg + "=";
+					std::stringstream argValue;
+					argValue << std::uppercase << std::hex << currentMIPS->r[regIdentifier];
+					for (int i = 1; i <= 8 - argValue.str().length(); i++) immediateOutput += "0";
+					immediateOutput += argValue.str();
+					immediateOutput += ", ";
+					output += immediateOutput;
+				}
+				// Even if the argument is a duplicate, either way, this will print 4 bytes of memory from the offset addres.
+				std::stringstream memStream;
+				std::stringstream addressStream;
+
+
+				int offsetAddress= currentMIPS->r[regIdentifier] + offsetValue;
+				addressStream << std::hex << offsetAddress;
+				memStream << "0x";
+				// 0 padding
+				for (int i = 1; i <= 8 - addressStream.str().length(); i++) memStream << "0";
+
+				memStream << std::uppercase << std::hex << offsetAddress;
+				memStream << ": ";
+				// output four bytes starting from arg+offsetvalue in memory
+				std::stringstream byteReads;
+				for (int i = 0; i < 4; i++) {
+					offsetAddress = currentMIPS->r[regIdentifier] + offsetValue + i;
+					// If valid address, read a byte.
+					if (Memory::IsValidAddress(offsetAddress)) {
+						if (Memory::Read_U8(offsetAddress) < 16) byteReads << "0"; // add a leading 0 if byte <= F.
+						byteReads << std::uppercase << std::hex << int(Memory::Read_U8(offsetAddress));
+					}
+					// If we're not reading the last byte, add a space.
+					if (i < 3) byteReads << " ";
+				}
+				output += memStream.str();
+				output += byteReads.str();
+			}
+
+		} 
+		if (nextp != parameters.npos) {
+			p = nextp + 1;
+			nextp = parameters.find(',', p);
+		}
+		else p = parameters.npos;
+	}
+
+	// Make sure there isn't a dangling ", " at the end of output
+	if (output.find_last_of(',') == output.length() - 2) {
+		output.erase(output.find_last_of(','), 2);
+	}
+	if (currentMIPS->inDelaySlot) output += " // Delay Slot";
+	snprintf(dest, bufsize, output.c_str());
+	return;
+
 }
 
 void CtrlDisAsmView::scrollStepping(u32 newPc)
@@ -1376,4 +1587,17 @@ u32 CtrlDisAsmView::getInstructionSizeAt(u32 address)
 	u32 start = manager.getStartAddress(address);
 	u32 next  = manager.getNthNextAddress(start,1);
 	return next-address;
+}
+
+
+// TODO: Methods for printing from FPUs and VFPUs.
+// FPUs: all formatted f0-f31
+// VFPUs: have formats Mx00, Rx0y, Cxy0, Sxyz where x is between 0 and 7, and y and z are between 0 and 3. Alternatively, v000-v080 with hex numbering.
+
+int regStringToMIPSGPReg(const char* name) {
+	for (int i = 0; i < 36; i++) {
+		if (std::string(regNames[i].name) == std::string(name))
+			return regNames[i].reg;
+	}
+	return MIPS_REG_INVALID;
 }
