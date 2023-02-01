@@ -983,6 +983,8 @@ static const ConfigSetting controlSettings[] = {
 #endif
 
 	ConfigSetting("DisableDpadDiagonals", &g_Config.bDisableDpadDiagonals, false, true, true),
+	ConfigSetting("TouchAnalogBehaviour", &g_Config.iTouchAnalogBehaviour, 0, true, true),
+
 	ConfigSetting("GamepadOnlyFocused", &g_Config.bGamepadOnlyFocused, false, true, true),
 	ConfigSetting("TouchButtonStyle", &g_Config.iTouchButtonStyle, 1, true, true),
 	ConfigSetting("TouchButtonOpacity", &g_Config.iTouchButtonOpacity, 65, true, true),

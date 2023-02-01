@@ -42,6 +42,12 @@ enum ChatPositions {
 	CENTER_RIGHT = 7,
 };
 
+enum TouchAnalogBehaviour {
+	IGNORE_ALL = 0,
+	IGNORE_DPAD = 1,
+	PRESS_ALL = 2,
+};
+
 namespace http {
 	class Download;
 	class Downloader;
@@ -331,6 +337,10 @@ public:
 	// Disable diagonals
 	bool bDisableDpadDiagonals;
 	bool bGamepadOnlyFocused;
+
+	// Drag analog behaviour
+	int iTouchAnalogBehaviour;
+
 	// Control Style
 	int iTouchButtonStyle;
 	int iTouchButtonOpacity;

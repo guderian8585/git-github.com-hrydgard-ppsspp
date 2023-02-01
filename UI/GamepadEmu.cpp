@@ -104,7 +104,7 @@ bool MultiTouchButton::Touch(const TouchInput &input) {
 		usedPointerMask |= 1 << input.id;
 	}
 	if (input.flags & TOUCH_MOVE) {
-		if (bounds_.Contains(input.x, input.y) && !(analogPointerMask & (1 << input.id)))
+		if (bounds_.Contains(input.x, input.y) && (!(analogPointerMask & (1 << input.id)) || g_Config.iTouchAnalogBehaviour != IGNORE_ALL))
 			pointerDownMask_ |= 1 << input.id;
 		else
 			pointerDownMask_ &= ~(1 << input.id);
@@ -288,7 +288,7 @@ bool PSPDpad::Touch(const TouchInput &input) {
 		}
 	}
 	if (input.flags & TOUCH_MOVE) {
-		if (dragPointerId_ == -1 && bounds_.Contains(input.x, input.y) && !(analogPointerMask & (1 << input.id))) {
+		if (dragPointerId_ == -1 && bounds_.Contains(input.x, input.y) && (!(analogPointerMask & (1 << input.id)) || g_Config.iTouchAnalogBehaviour == PRESS_ALL)) {
 			dragPointerId_ = input.id;
 		}
 		if (input.id == dragPointerId_) {
