@@ -458,7 +458,10 @@ bool Config::IsBackendEnabled(GPUBackend backend, bool validate) {
 			return false;
 	}
 
-#if PPSSPP_PLATFORM(UWP)
+#if PPSSPP_PLATFORM(IOS) || PPSSPP_PLATFORM(SWITCH)
+	if (backend != GPUBackend::OPENGL)
+		return false;
+#elif PPSSPP_PLATFORM(UWP)
 	if (backend != GPUBackend::DIRECT3D11)
 		return false;
 #elif PPSSPP_PLATFORM(SWITCH)
@@ -478,11 +481,12 @@ bool Config::IsBackendEnabled(GPUBackend backend, bool validate) {
 	if (backend == GPUBackend::OPENGL)
 		return false;
 #endif
+#if !PPSSPP_PLATFORM(SWITCH)
 	if (validate) {
 		if (backend == GPUBackend::VULKAN && !VulkanMayBeAvailable())
 			return false;
 	}
-
+#endif
 	return true;
 }
 
@@ -1164,7 +1168,7 @@ void Config::Load(const char *iniFileName, const char *controllerIniFilename) {
 	// Sometimes the download may not be finished when the main screen shows (if the user dismisses the
 	// splash screen quickly), but then we'll just show the notification next time instead, we store the
 	// upgrade number in the ini.
-	if (iRunCount % 10 == 0 && bCheckForNewVersion) {
+	if (false && iRunCount % 10 == 0 && bCheckForNewVersion) {
 		const char *versionUrl = "http://www.ppsspp.org/version.json";
 		const char *acceptMime = "application/json, text/*; q=0.9, */*; q=0.8";
 		auto dl = g_DownloadManager.StartDownloadWithCallback(versionUrl, Path(), &DownloadCompletedCallback, acceptMime);

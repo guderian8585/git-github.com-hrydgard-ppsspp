@@ -1076,7 +1076,9 @@ void retro_init(void)
       logman->RemoveListener(logman->GetDebuggerListener());
       logman->ChangeFileLog(nullptr);
       logman->AddListener(printfLogger);
-      logman->SetAllLogLevels(LogTypes::LINFO);
+#if 1
+		logman->SetAllLogLevels(LogTypes::LNOTICE);
+#endif
    }
 
    g_Config.Load("", "");
@@ -1282,6 +1284,15 @@ bool retro_load_game(const struct retro_game_info *game)
    coreParam.cpuCore         =  (CPUCore)g_Config.iCpuCore;
 
    std::string error_string;
+#if 1
+   // was if 0 on last rebase, should probably implement via core options at this point?
+   g_Config.bVertexDecoderJit = true;
+#endif
+	check_variables(coreParam);
+	
+	if(g_Config.bVertexDecoderJit)
+		g_Config.bVertexDecoderJit = (coreParam.cpuCore == CPUCore::JIT) ? true : false;
+
    if (!PSP_InitStart(coreParam, &error_string))
    {
       ERROR_LOG(BOOT, "%s", error_string.c_str());
