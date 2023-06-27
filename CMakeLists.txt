@@ -2267,7 +2267,7 @@ else()
 endif()
 
 target_link_libraries(${CoreLibName} Common native kirk cityhash sfmt19937 xbrz xxhash rcheevos ${GlslangLibs}
-	${CoreExtraLibs} ${OPENGL_LIBRARIES} ${X11_LIBRARIES} ${CMAKE_DL_LIBS})
+	${CoreExtraLibs} ${OPENGL_LIBRARIES} ${X11_LIBRARIES})
 
 target_compile_features(${CoreLibName} PUBLIC cxx_std_17)
 
