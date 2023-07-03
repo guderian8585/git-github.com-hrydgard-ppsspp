@@ -673,15 +673,15 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-#ifdef HAVE_LIBNX
+#if PPSSPP_PLATFORM(SWITCH)
 	socketInitializeDefault();
 	nxlinkStdio();
-#else // HAVE_LIBNX
+#else // PPSSPP_PLATFORM(SWITCH)
 	// Ignore sigpipe.
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
 		perror("Unable to ignore SIGPIPE");
 	}
-#endif // HAVE_LIBNX
+#endif // PPSSPP_PLATFORM(SWITCH)
 
 	PROFILE_INIT();
 	glslang::InitializeProcess();
@@ -696,11 +696,13 @@ int main(int argc, char *argv[]) {
 	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 #endif
 
+#if !PPSSPP_PLATFORM(SWITCH)
 	if (VulkanMayBeAvailable()) {
 		printf("DEBUG: Vulkan might be available.\n");
 	} else {
 		printf("DEBUG: Vulkan is not available, not using Vulkan.\n");
 	}
+#endif // PPSSPP_PLATFORM(SWITCH)
 
 	SDL_version compiled;
 	SDL_version linked;
@@ -806,6 +808,9 @@ int main(int argc, char *argv[]) {
 	if (mode & SDL_WINDOW_FULLSCREEN_DESKTOP) {
 		g_display.pixel_xres = g_DesktopWidth;
 		g_display.pixel_yres = g_DesktopHeight;
+#if PPSSPP_PLATFORM(SWITCH)
+		g_Config.iForceFullScreen = 1;
+#endif // PPSSPP_PLATFORM(SWITCH)
 		if (g_Config.iForceFullScreen == -1)
 			g_Config.bFullScreen = true;
 	} else {
@@ -1513,9 +1518,9 @@ int main(int argc, char *argv[]) {
 
 	glslang::FinalizeProcess();
 	printf("Leaving main\n");
-#ifdef HAVE_LIBNX
+#if PPSSPP_PLATFORM(SWITCH)
 	socketExit();
-#endif
+#endif // PPSSPP_PLATFORM(SWITCH)
 
 	// If a restart was requested (and supported on this platform), respawn the executable.
 	if (g_RestartRequested) {
