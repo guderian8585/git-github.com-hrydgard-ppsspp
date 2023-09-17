@@ -1343,7 +1343,7 @@ static void DrawFPS(UIContext *ctx, const Bounds &bounds) {
 	float vps, fps, actual_fps;
 	__DisplayGetFPS(&vps, &fps, &actual_fps);
 
-	char fpsbuf[256]{};
+	char fpsbuf[64]{};
 	if (g_Config.iShowStatusFlags == ((int)ShowStatusFlags::FPS_COUNTER | (int)ShowStatusFlags::SPEED_COUNTER)) {
 		snprintf(fpsbuf, sizeof(fpsbuf), "%0.0f/%0.0f (%0.1f%%)", actual_fps, fps, vps / (59.94f / 100.0f));
 	} else {
@@ -1351,7 +1351,9 @@ static void DrawFPS(UIContext *ctx, const Bounds &bounds) {
 			snprintf(fpsbuf, sizeof(fpsbuf), "FPS: %0.1f", actual_fps);
 		}
 		if (g_Config.iShowStatusFlags & (int)ShowStatusFlags::SPEED_COUNTER) {
-			snprintf(fpsbuf, sizeof(fpsbuf), "%s Speed: %0.1f%%", fpsbuf, vps / (59.94f / 100.0f));
+			char prevbuf[64];
+			truncate_cpy(prevbuf, fpsbuf);
+			snprintf(fpsbuf, sizeof(fpsbuf), "%s Speed: %0.1f%%", prevbuf, vps / (59.94f / 100.0f));
 		}
 	}
 
