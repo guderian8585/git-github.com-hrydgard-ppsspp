@@ -313,7 +313,7 @@ int Client::SendRequestWithData(const char *method, const RequestParams &req, co
 		"Accept: %s\r\n"
 		"Connection: close\r\n"
 		"%s"
-		"\r\n";
+		"\r\n\r\n";
 
 	buffer.Printf(tpl,
 		method, req.resource.c_str(), httpVersion_,
@@ -322,6 +322,7 @@ int Client::SendRequestWithData(const char *method, const RequestParams &req, co
 		req.acceptMime,
 		otherHeaders ? otherHeaders : "");
 	buffer.Append(data);
+
 	bool flushed = buffer.FlushSocket(sock(), dataTimeout_, progress->cancelled);
 	if (!flushed) {
 		WARN_LOG(HTTP, "SendRequestWithData failed: resource: %s agent=%s", req.resource.c_str(), userAgent_.c_str());
