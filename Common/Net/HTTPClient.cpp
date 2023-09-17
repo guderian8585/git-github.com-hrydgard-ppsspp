@@ -324,6 +324,7 @@ int Client::SendRequestWithData(const char *method, const RequestParams &req, co
 	buffer.Append(data);
 	bool flushed = buffer.FlushSocket(sock(), dataTimeout_, progress->cancelled);
 	if (!flushed) {
+		WARN_LOG(HTTP, "SendRequestWithData failed: resource: %s agent=%s", req.resource.c_str(), userAgent_.c_str());
 		return -1;  // TODO error code.
 	}
 	return 0;

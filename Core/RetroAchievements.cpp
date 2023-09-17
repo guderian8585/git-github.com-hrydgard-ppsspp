@@ -217,7 +217,7 @@ static void server_call_callback(const rc_api_request_t *request,
 }
 
 static void log_message_callback(const char *message, const rc_client_t *client) {
-	INFO_LOG(ACHIEVEMENTS, "RetroAchievements: %s", message);
+	INFO_LOG(ACHIEVEMENTS, "RA: %s", message);
 }
 
 // For detailed documentation, see https://github.com/RetroAchievements/rcheevos/wiki/rc_client_set_event_handler.
@@ -411,6 +411,7 @@ void Initialize() {
 	rc_client_enable_logging(g_rcClient, RC_CLIENT_LOG_LEVEL_VERBOSE, log_message_callback);
 
 	if (!System_GetPropertyBool(SYSPROP_SUPPORTS_HTTPS)) {
+		INFO_LOG(ACHIEVEMENTS, "Falling back to HTTP host, no HTTPS support detected");
 		// Disable SSL if not supported by our platform implementation.
 		rc_client_set_host(g_rcClient, "http://retroachievements.org");
 	}
