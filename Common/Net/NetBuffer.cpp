@@ -9,6 +9,7 @@
 #endif
 #include <algorithm>
 #include <cstring>
+#include <cerrno>
 
 #ifndef MSG_NOSIGNAL
 // Default value to 0x00 (do nothing) in systems where it's not supported.
@@ -51,7 +52,7 @@ bool Buffer::FlushSocket(uintptr_t sock, double timeout, bool *cancelled) {
 		int sent = send(sock, &data_[pos], (int)(end - pos), MSG_NOSIGNAL);
 		// TODO: Do we need some retry logic here, instead of just giving up?
 		if (sent < 0) {
-			ERROR_LOG(IO, "FlushSocket failed to send: %d", errno);
+			ERROR_LOG(IO, "FlushSocket failed to send: %d (%s)", errno, strerror(errno));
 			return false;
 		}
 		pos += sent;
