@@ -1380,8 +1380,11 @@ static u32 sceAtracDecodeData(int atracID, u32 outAddr, u32 numSamplesAddr, u32 
 		if (Memory::IsValidAddress(finishFlagAddr))
 			Memory::Write_U32(finish, finishFlagAddr);
 		// On error, no remaining frame value is written.
-		if (ret == 0 && Memory::IsValidAddress(remainAddr))
+		if (ret == 0 && Memory::IsValidAddress(remainAddr)){
+			if (PSP_CoreParameter().compat.flags().AtracDecodeDataRemainFrameHack && remains > 0)
+				remains--;
 			Memory::Write_U32(remains, remainAddr);
+		}
 	}
 	DEBUG_LOG(ME, "%08x=sceAtracDecodeData(%i, %08x, %08x[%08x], %08x[%08x], %08x[%d])", ret, atracID, outAddr, 
 			  numSamplesAddr, numSamples,
@@ -1531,7 +1534,6 @@ static u32 sceAtracGetLoopStatus(int atracID, u32 loopNumAddr, u32 statusAddr) {
 		ERROR_LOG(ME, "sceAtracGetLoopStatus(%i, %08x, %08x): no data", atracID, loopNumAddr, statusAddr);
 		return ATRAC_ERROR_NO_DATA;
 	} else {
-		DEBUG_LOG(ME, "sceAtracGetLoopStatus(%i, %08x, %08x)", atracID, loopNumAddr, statusAddr);
 		if (Memory::IsValidAddress(loopNumAddr))
 			Memory::Write_U32(atrac->loopNum_, loopNumAddr);
 		// return audio's loopinfo in at3 file
@@ -1542,7 +1544,7 @@ static u32 sceAtracGetLoopStatus(int atracID, u32 loopNumAddr, u32 statusAddr) {
 				Memory::Write_U32(0, statusAddr);
 		}
 	}
-	return 0;
+	return hleLogDebug(ME, 0);
 }
 
 static u32 sceAtracGetInternalErrorInfo(int atracID, u32 errorAddr) {
