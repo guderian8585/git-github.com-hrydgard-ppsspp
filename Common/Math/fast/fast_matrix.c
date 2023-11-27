@@ -137,5 +137,3 @@ void fast_matrix_mul_4x4_c(float *dest, const float *a, const float *b) {
 	dest[wz] = b[wx] * a[xz] + b[wy] * a[yz] + b[wz] * a[zz] + b[ww] * a[wz];
 	dest[ww] = b[wx] * a[xw] + b[wy] * a[yw] + b[wz] * a[zw] + b[ww] * a[ww];
 }
-
-#endif

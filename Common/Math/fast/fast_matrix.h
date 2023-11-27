@@ -8,10 +8,6 @@ extern "C" {
 
 // A mini library of 4x4 matrix muls.
 
-extern void fast_matrix_mul_4x4_c(float *dest, const float *a, const float *b);
-extern void fast_matrix_mul_4x4_neon(float *dest, const float *a, const float *b);
-extern void fast_matrix_mul_4x4_sse(float *dest, const float *a, const float *b);
-
 #if PPSSPP_ARCH(X86) || PPSSPP_ARCH(AMD64)
 // Hard link to SSE implementations on x86/amd64
 #define fast_matrix_mul_4x4 fast_matrix_mul_4x4_sse
@@ -19,6 +15,18 @@ extern void fast_matrix_mul_4x4_sse(float *dest, const float *a, const float *b)
 #define fast_matrix_mul_4x4 fast_matrix_mul_4x4_neon
 #else
 #define fast_matrix_mul_4x4 fast_matrix_mul_4x4_c
+#endif
+
+void fast_matrix_mul_4x4_c(float *dest, const float *a, const float *b);
+
+#if PPSSPP_ARCH(X86) || PPSSPP_ARCH(AMD64)
+
+void fast_matrix_mul_4x4_sse(float *dest, const float *a, const float *b);
+
+#elif PPSSPP_ARCH(ARM_NEON)
+
+void fast_matrix_mul_4x4_neon(float *C, const float *A, const float *B);
+
 #endif
 
 #ifdef __cplusplus
