@@ -1083,6 +1083,17 @@ static int sceNetApctlDelHandler(u32 handlerID) {
 	return NetApctl_DelHandler(handlerID);
 }
 
+static u32_le sceNetInetInetAddr(const char* hostname) {
+	INFO_LOG(SCENET, "sceNetInetInetAddr(%s)", safe_string(hostname));
+	if (hostname == nullptr || hostname[0] == '\0')
+		return hleLogError(SCENET, INADDR_NONE, "invalid arg");
+
+	u32 ipv4 = INADDR_NONE;
+	inet_pton(AF_INET, hostname, &ipv4); // Alternative to the deprecated inet_addr(hostname)
+
+	return hleLogSuccessX(SCENET, ipv4);
+}
+
 static int sceNetInetInetAton(const char *hostname, u32 addrPtr) {
 	ERROR_LOG(SCENET, "UNIMPL sceNetInetInetAton(%s, %08x)", hostname, addrPtr);
 	return -1;
@@ -1379,6 +1390,12 @@ static int sceNetResolverInit()
 	return 0;
 }
 
+static int sceNetResolverTerm()
+{
+	ERROR_LOG(SCENET, "UNIMPL %s()", __FUNCTION__);
+	return 0;
+}
+
 static int sceNetApctlAddInternalHandler(u32 handlerPtr, u32 handlerArg) {
 	ERROR_LOG(SCENET, "UNIMPL %s(%08x, %08x)", __FUNCTION__, handlerPtr, handlerArg);
 	// This seems to be a 2nd kind of handler
@@ -1494,7 +1511,7 @@ const HLEFunction sceNetResolver[] = {
 	{0X94523E09, nullptr,                            "sceNetResolverDelete",            '?', ""     },
 	{0XF3370E61, &WrapI_V<sceNetResolverInit>,       "sceNetResolverInit",              'i', ""     },
 	{0X808F6063, nullptr,                            "sceNetResolverStop",              '?', ""     },
-	{0X6138194A, nullptr,                            "sceNetResolverTerm",              '?', ""     },
+	{0X6138194A, &WrapI_V<sceNetResolverTerm>,       "sceNetResolverTerm",              'i', ""     },
 	{0X629E2FB7, nullptr,                            "sceNetResolverStartAtoN",         '?', ""     },
 	{0X14C17EF9, nullptr,                            "sceNetResolverStartNtoAAsync",    '?', ""     },
 	{0XAAC09184, nullptr,                            "sceNetResolverStartAtoNAsync",    '?', ""     },
@@ -1524,7 +1541,7 @@ const HLEFunction sceNetInet[] = {
 	{0X774E36F4, nullptr,                            "sceNetInetSendmsg",               '?', ""     },
 	{0XFBABE411, &WrapI_V<sceNetInetGetErrno>,       "sceNetInetGetErrno",              'i', ""     },
 	{0X1A33F9AE, nullptr,                            "sceNetInetBind",                  '?', ""     },
-	{0XB75D5B0A, nullptr,                            "sceNetInetInetAddr",              '?', ""     },
+	{0XB75D5B0A, &WrapU_C<sceNetInetInetAddr>,       "sceNetInetInetAddr",              'x', "s"    },
 	{0X1BDF5D13, &WrapI_CU<sceNetInetInetAton>,      "sceNetInetInetAton",              'i', "sx"   },
 	{0XD0792666, nullptr,                            "sceNetInetInetNtop",              '?', ""     },
 	{0XE30B8C19, nullptr,                            "sceNetInetInetPton",              '?', ""     },
