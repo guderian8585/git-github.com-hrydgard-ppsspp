@@ -47,6 +47,7 @@ protected:
 
 private:
 	void PreCreateViews() override;
+	void CreateBanner(UI::LinearLayout *parent, const char *category, const char *url);
 
 	void CreateGraphicsSettings(UI::ViewGroup *graphicsSettings);
 	void CreateControlsSettings(UI::ViewGroup *tools);
