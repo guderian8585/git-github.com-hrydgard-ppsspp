@@ -32,7 +32,7 @@ enum class PauseScreenMode {
 
 class GamePauseScreen : public UIDialogScreenWithGameBackground {
 public:
-	GamePauseScreen(const Path &filename);
+	GamePauseScreen(const Path &filename, std::string gameID);
 	~GamePauseScreen();
 
 	void dialogFinished(const Screen *dialog, DialogResult dr) override;
@@ -68,4 +68,5 @@ private:
 	PauseScreenMode mode_ = PauseScreenMode::MAIN;
 
 	UI::Button *playButton_ = nullptr;
+	std::string gameID_;
 };
