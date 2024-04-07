@@ -20,7 +20,7 @@ public:
 	// Inits the sockaddr_in.
 	bool Resolve(const char *host, int port, DNSType type = DNSType::ANY);
 
-	bool Connect(int maxTries = 2, double timeout = 20.0f, bool *cancelConnect = nullptr);
+	bool Connect(int maxTries = 2, double timeout = 20.0f, const bool *cancelConnect = nullptr);
 	void Disconnect();
 
 	// Only to be used for bring-up and debugging.
@@ -58,7 +58,7 @@ public:
 class Client : public net::Connection {
 public:
 	Client();
-	~Client();
+	~Client() override;
 
 	// Return value is the HTTP return code. 200 means OK. < 0 means some local error.
 	int GET(const RequestParams &req, Buffer *output, net::RequestProgress *progress);
@@ -93,7 +93,7 @@ protected:
 class HTTPRequest : public Request {
 public:
 	HTTPRequest(RequestMethod method, const std::string &url, const std::string &postData, const std::string &postMime, const Path &outfile, ProgressBarMode progressBarMode = ProgressBarMode::DELAYED, std::string_view name = "");
-	~HTTPRequest();
+	~HTTPRequest() override;
 
 	void Start() override;
 	void Join() override;

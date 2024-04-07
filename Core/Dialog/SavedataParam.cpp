@@ -239,7 +239,7 @@ std::string SavedataParam::GetSaveDirName(const SceUtilitySavedataParam *param, 
 		return GetSaveName(param);
 }
 
-std::string SavedataParam::GetSaveDir(const SceUtilitySavedataParam *param, const std::string &saveDirName) const
+std::string SavedataParam::GetSaveDir(const SceUtilitySavedataParam *param, const std::string &saveDirName)
 {
 	if (!param) {
 		return "";
@@ -253,7 +253,7 @@ std::string SavedataParam::GetSaveDir(const SceUtilitySavedataParam *param, int 
 	return GetSaveDir(param, GetSaveDirName(param, saveId));
 }
 
-std::string SavedataParam::GetSaveFilePath(const SceUtilitySavedataParam *param, const std::string &saveDir) const
+std::string SavedataParam::GetSaveFilePath(const SceUtilitySavedataParam *param, const std::string &saveDir)
 {
 	if (!param) {
 		return "";
@@ -279,12 +279,12 @@ inline static std::string FixedToString(const char *str, size_t n)
 	}
 }
 
-std::string SavedataParam::GetGameName(const SceUtilitySavedataParam *param) const
+std::string SavedataParam::GetGameName(const SceUtilitySavedataParam *param)
 {
 	return FixedToString(param->gameName, ARRAY_SIZE(param->gameName));
 }
 
-std::string SavedataParam::GetSaveName(const SceUtilitySavedataParam *param) const
+std::string SavedataParam::GetSaveName(const SceUtilitySavedataParam *param)
 {
 	const std::string saveName = FixedToString(param->saveName, ARRAY_SIZE(param->saveName));
 	if (saveName == "<>")
@@ -292,12 +292,12 @@ std::string SavedataParam::GetSaveName(const SceUtilitySavedataParam *param) con
 	return saveName;
 }
 
-std::string SavedataParam::GetFileName(const SceUtilitySavedataParam *param) const
+std::string SavedataParam::GetFileName(const SceUtilitySavedataParam *param)
 {
 	return FixedToString(param->fileName, ARRAY_SIZE(param->fileName));
 }
 
-std::string SavedataParam::GetKey(const SceUtilitySavedataParam *param) const
+std::string SavedataParam::GetKey(const SceUtilitySavedataParam *param)
 {
 	static const char* const lut = "0123456789ABCDEF";
 
@@ -315,7 +315,7 @@ std::string SavedataParam::GetKey(const SceUtilitySavedataParam *param) const
 	return output;
 }
 
-bool SavedataParam::HasKey(const SceUtilitySavedataParam *param) const
+bool SavedataParam::HasKey(const SceUtilitySavedataParam *param)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(param->key); ++i)
 	{
@@ -733,7 +733,7 @@ int SavedataParam::LoadSaveData(SceUtilitySavedataParam *param, const std::strin
 	return 0;
 }
 
-int SavedataParam::DetermineCryptMode(const SceUtilitySavedataParam *param) const {
+int SavedataParam::DetermineCryptMode(const SceUtilitySavedataParam *param) {
 	int decryptMode = 1;
 	if (param->secureVersion == 1) {
 		decryptMode = 1;
@@ -1713,7 +1713,7 @@ const SceUtilitySavedataParam *SavedataParam::GetPspParam() const
 	return pspParam;
 }
 
-int SavedataParam::GetFilenameCount()
+int SavedataParam::GetFilenameCount() const
 {
 	return saveNameListDataCount;
 }
@@ -1732,7 +1732,7 @@ std::string SavedataParam::GetSaveDir(int idx) const {
 	return saveDataList[idx].saveDir;
 }
 
-int SavedataParam::GetSelectedSave()
+int SavedataParam::GetSelectedSave() const
 {
 	// The slot # of the same save on LOAD/SAVE lists can dismatch so this isn't right anyhow
 	return selectedSave < saveNameListDataCount ? selectedSave : 0;
@@ -1748,7 +1748,7 @@ int SavedataParam::GetFirstListSave()
 	return 0;
 }
 
-int SavedataParam::GetLastListSave()
+int SavedataParam::GetLastListSave() const
 {
 	return saveNameListDataCount - 1;
 }
