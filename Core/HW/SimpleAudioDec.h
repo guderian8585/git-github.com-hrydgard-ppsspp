@@ -77,14 +77,6 @@ private:
 	void Init();
 	bool OpenCodec(int block_align);
 
-	u32 ctxPtr;
-	int audioType;
-	int sample_rate_;
-	int channels_;
-	int outSamples; // output samples per frame
-	int srcPos; // bytes consumed in source during the last decoding
-	int wanted_resample_freq; // wanted resampling rate/frequency
-
 	AVFrame *frame_;
 #if HAVE_LIBAVCODEC_CONST_AVCODEC // USE_FFMPEG is implied
 	const
@@ -94,6 +86,14 @@ private:
 	SwrContext      *swrCtx_;
 
 	bool codecOpen_;
+
+	u32 ctxPtr;
+	int audioType;
+	int sample_rate_;
+	int channels_;
+	int outSamples; // output samples per frame
+	int srcPos; // bytes consumed in source during the last decoding
+	int wanted_resample_freq; // wanted resampling rate/frequency
 };
 
 void AudioClose(SimpleAudio **ctx);
