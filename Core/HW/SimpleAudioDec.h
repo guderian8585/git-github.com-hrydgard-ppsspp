@@ -49,7 +49,26 @@ public:
 	uint32_t GetCtxPtr() const { return ctxPtr; }
 
 private:
+	void Init();
+	bool OpenCodec(int block_align);
+
+	AVFrame *frame_;
+#if HAVE_LIBAVCODEC_CONST_AVCODEC // USE_FFMPEG is implied
+	const
+#endif
+	AVCodec *codec_;
+	AVCodecContext  *codecCtx_;
+	SwrContext      *swrCtx_;
+
+	bool codecOpen_;
+
 	uint32_t ctxPtr = 0xFFFFFFFF;
+	int audioType;
+	int sample_rate_;
+	int channels_;
+	int outSamples; // output samples per frame
+	int srcPos; // bytes consumed in source during the last decoding
+	int wanted_resample_freq; // wanted resampling rate/frequency
 };
 
 void AudioClose(AudioDecoder **ctx);
